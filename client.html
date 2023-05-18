@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>socket client</title>
+</head>
+
+<body>
+    <div class="messages-container"></div>
+    <div class="send">
+        <h1>send</h1>
+        <form action="#" id="send-container">
+            <input type="text" name="to" id="to" />
+            <input type="text" name="messageInp" id="messageInp" />
+            <button class="btn" type="submit">Send</button>
+        </form>
+        <h1>req from user</h1>
+        <form action="#" id="req-container">
+            <input type="text" name="from" id="from" />
+            <button class="btn" type="submit">request</button>
+        </form>
+        <h1>req inboxes</h1>
+        <button class="btn" onclick="requestInboxes()">req inboxes</button>
+    </div>
+    <script src='http://localhost:1113/socket.io/socket.io.js'></script>
+    <script>
+        const form1 = document.getElementById('send-container')
+        const form2 = document.getElementById('req-container')
+        const toInput = document.getElementById('to')
+        const fromInput = document.getElementById('from')
+        const msgInput = document.getElementById('messageInp')
+        const msgContainer = document.querySelector('.messages-container')
+
+        const append = (message) => {
+            const messageElement = document.createElement('div')
+            messageElement.innerText = message
+            msgContainer.append(messageElement)
+        }
+
+        form1.addEventListener("submit", (e) => {
+            e.preventDefault()
+            const to = toInput.value
+            const msg = msgInput.value
+            append(`you->${to}: ${msg}`)
+            socket.emit('send-msg', { message: msg, to: to })
+            msgInput.value = ''
+            toInput.value = ''
+        })
+
+        form2.addEventListener("submit", (e) => {
+            e.preventDefault()
+            const from = fromInput.value
+            socket.emit('request-user-chat', { userID: from })
+            fromInput.value = ''
+        })
+        const requestInboxes = () => {
+            socket.emit("request-inbox-users")
+        }
+    </script>
+    <script>
+        const token = prompt("token");
+        const socket = io('http://localhost:1113', {
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: 15,
+            auth: { token: token }
+        })
+
+        socket.on('connect', () => {
+            append("connected to chat")
+        })
+        socket.on('disconnect', () => {
+            append("disconnected to chat")
+        })
+        socket.on('message', (msg) => {
+            append(`${msg}: message`)
+        })
+        socket.on('user-joined', (usr) => {
+            append(`${usr.name}(${usr._id}) joined the chat`)
+        });
+        socket.on('user-left', (usr) => {
+            append(`${usr.name}(${usr._id}) left the chat`)
+        });
+        socket.on('recieved-data', (data) => {
+            let history = data.history
+            history.forEach(msg => {
+                append(`${msg.from || "you"}->${msg.to || "you"}: ${msg.message}`)
+            });
+            socket.emit('recieved', data.from || "")
+        })
+        socket.on('recieved-msg', (msg) => {
+            append(`${msg.from}->you: ${msg.message}`)
+            socket.emit('recieved', msg.from)
+        })
+    </script>
+
+</body>
+
+</html>

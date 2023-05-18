@@ -1,0 +1,14 @@
+#searchInp{
+    margin-left: 8px;
+}
+.xNav{
+    font-size: 180%;
+    margin: 10px;
+    margin-bottom: 0px;
+}
+#img_det {
+    max-height: 500px;
+}
+#img_acc {
+    height: 160px;
+}
